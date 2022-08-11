@@ -49,6 +49,8 @@ type HandlerOpts = {
     localAddress?: string;
     ipFamily?: number;
     dnsLookup?: typeof dns['lookup'];
+    customHttpHeader?: (rawHeaders: string[]) => string[];
+    customTcpHeader?: (rawHeaders: string[]) => string[];
 };
 
 export type PrepareRequestFunctionOpts = {
@@ -69,6 +71,8 @@ export type PrepareRequestFunctionResult = {
     localAddress?: string;
     ipFamily?: number;
     dnsLookup?: typeof dns['lookup'];
+    customTcpHeader?: (rawHeaders: string[]) => string[];
+    customHttpHeader?: (rawHeaders: string[]) => string[];
 };
 
 type Promisable<T> = T | Promise<T>;
@@ -271,7 +275,15 @@ export class Server extends EventEmitter {
             const handlerOpts = await this.prepareRequestHandling(request);
             handlerOpts.srcHead = head;
 
-            const data = { request, sourceSocket: socket, head, handlerOpts: handlerOpts as ChainOpts, server: this, isPlain: false };
+            const data = {
+                request,
+                sourceSocket: socket,
+                head,
+                handlerOpts: handlerOpts as ChainOpts,
+                server: this,
+                isPlain: false,
+                customTcpHeader: handlerOpts.customTcpHeader,
+            };
 
             if (handlerOpts.upstreamProxyUrlParsed) {
                 this.log(socket.proxyChainId, `Using HandlerTunnelChain => ${request.url}`);
@@ -403,6 +415,8 @@ export class Server extends EventEmitter {
         handlerOpts.localAddress = funcResult.localAddress;
         handlerOpts.ipFamily = funcResult.ipFamily;
         handlerOpts.dnsLookup = funcResult.dnsLookup;
+        handlerOpts.customHttpHeader = funcResult.customHttpHeader;
+        handlerOpts.customTcpHeader = funcResult.customTcpHeader;
 
         // If not authenticated, request client to authenticate
         if (funcResult.requestAuthentication) {

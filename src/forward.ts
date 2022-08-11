@@ -25,6 +25,7 @@ export interface HandlerOpts {
     localAddress?: string;
     ipFamily?: number;
     dnsLookup?: typeof dns['lookup'];
+    customHttpHeader?: (rawHeaders: string[]) => string[];
 }
 
 /**
@@ -53,9 +54,16 @@ export const forward = async (
     const proxy = handlerOpts.upstreamProxyUrlParsed;
     const origin = proxy ? proxy.origin : request.url;
 
+    let headers = [
+        ...request.rawHeaders,
+    ];
+    if (handlerOpts.customHttpHeader) {
+        headers = handlerOpts.customHttpHeader(headers);
+    }
+
     const options: Options = {
         method: request.method!,
-        headers: validHeadersOnly(request.rawHeaders),
+        headers: validHeadersOnly(headers),
         insecureHTTPParser: true,
         localAddress: handlerOpts.localAddress,
         family: handlerOpts.ipFamily,

@@ -41,6 +41,7 @@ interface ChainOpts {
     handlerOpts: HandlerOpts;
     server: EventEmitter & { log: (...args: any[]) => void; };
     isPlain: boolean;
+    customTcpHeader?: (rawHeaders: string[]) => string[];
 }
 
 /**
@@ -56,6 +57,7 @@ export const chain = (
         handlerOpts,
         server,
         isPlain,
+        customTcpHeader,
     }: ChainOpts,
 ): void => {
     if (head && head.length > 0) {
@@ -66,13 +68,18 @@ export const chain = (
 
     const { upstreamProxyUrlParsed: proxy } = handlerOpts;
 
+    let headers = [
+        'host',
+        request.url!,
+    ];
+    if (customTcpHeader) {
+        headers = customTcpHeader(headers);
+    }
+
     const options: Options = {
         method: 'CONNECT',
         path: request.url,
-        headers: [
-            'host',
-            request.url!,
-        ],
+        headers,
         localAddress: handlerOpts.localAddress,
         family: handlerOpts.ipFamily,
         lookup: handlerOpts.dnsLookup,
