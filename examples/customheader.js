@@ -3,7 +3,11 @@ const ProxyChain = require('../dist/index');
 const server = new ProxyChain.Server({
     port: 8899,
     verbose: false,
-    prepareRequestFunction: () => {
+    prepareRequestFunction: ({ request, username, password, hostname, port, isHttp, connectionId }) => {
+        if (!isHttp && port !== 443) {
+            return {}
+        }
+
         return {
             upstreamProxyUrl: `http://cloudnproxy.baidu.com:443`,
             failMsg: 'Bad username or password, please try again.',
